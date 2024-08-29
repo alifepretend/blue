@@ -11,7 +11,7 @@ using namespace std;
 IO io;
 
 int main() {
-	vector<vector<double>> value_list = io.parsecsv(IO::readFile("./temp_measurement.txt")); 
+	vector<vector<double>> value_list = io.parsecsv(IO::readFile("./temp_measurement_ambient.txt")); 
 
 	vector<vector<double>> trimmed_value_list = io.removeColumn(value_list, 2);
 
@@ -22,7 +22,10 @@ int main() {
   resistance_value_list = io.applyFunction(resistance_value_list, 1, &Calibration::voltageInDivisorToResistance, 491, 3.3);
 
   resistance_value_list = io.applyFunction(resistance_value_list, 0, &Calibration::pt100ResistanceToTemperature);
-  for (vector<double> line : resistance_value_list) {
+
+  resistance_value_list = io.applyFunction(resistance_value_list, 1, &Calibration::ntcResistanceToTemperature); 
+
+for (vector<double> line : resistance_value_list) {
     string temp_line = "";
 
     for (int i = 0; i < line.size(); i++) {
@@ -34,7 +37,7 @@ int main() {
       }
     }
 
-    io.writeFile(temp_line, "./resistencia.txt");
+    io.writeFile(temp_line, "./temperature_ambient.txt");
     cout << endl;
   }
   

@@ -16,6 +16,16 @@ public:
     return voltage+0.01;
 	}
   
+  static double ntcResistanceToTemperature(double resistance) {
+    double a = 4.6096 / (100000.0*100000.0*100000.0);
+    double b = -2.5983 / (100000.0*100000.0);
+    double c = 0.000003946;
+    double d = -0.0256495;
+    double e = 100.578;
+
+    return (a*resistance*resistance*resistance*resistance + b*resistance*resistance*resistance + c*resistance*resistance + d*resistance + e);
+  }
+  
   // Funciona para calcular a resistência quando esta está com um dos lados conectados ao aterramento.
   // A resistance é o valor da resistência medido da resistência que não varia em série.
   static double voltageInDivisorToResistance(double voltage, double resistance, double v_max) {

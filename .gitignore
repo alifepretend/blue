@@ -30,3 +30,14 @@
 *.exe
 *.out
 *.app
+NTCGraph/temp_measurement_ambient.txtZone.Identifier
+NTCGraph/Resistencia-media.txtZone.Identifier
+libraries/.Calibration.h.swp
+NTCGraph/test
+NTCGraph/temp_comparison_arthur.txt
+NTCGraph/temp_measurement_ambient.txt
+NTCGraph/temperature_ambient.txt
+NTCGraph/Resistencia-media-arthur.txt
+NTCGraph/temp_comparation.txt
+NTCGraph/temp_comparison_1.txt
+NTCGraph/NTCGraph
