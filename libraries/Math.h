@@ -14,7 +14,7 @@ public:
 		double sum = 0;
 		
 		// Faz o somatório da função.
-		for (unsigned int i = 1; i < data.size(); i++) {
+		for (int i = 1; i < (signed)data.size(); i++) {
 			try {
 				sum += (data[i][1 - inverted] - data[i - 1][1 - inverted]) / (data[i][0 + inverted] - data[i - 1][0 + inverted]);
 

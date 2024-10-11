@@ -1,8 +1,4 @@
 #pragma once
-#include "serialib.h"
-
-#ifndef IO_H
-#define IO_H
 
 #include <iostream>
 #include <fstream>
@@ -11,7 +7,7 @@
 #include <vector>
 #include <codecvt>
 #include <locale>
-#include <functional>
+#include "serialib/serialib.h"
 
 using namespace std;
 
@@ -23,12 +19,45 @@ public:
 		unsigned int y = 0;
 	};
 
-	void writeFile(string text, string path, bool append = 1);
+	static void writeFile(string text, string path) {
+		// Cria e abre um arquivo de texto
+		ofstream file(path);
 
-	void writeFileWithCurrentTime(string text, string path, bool append = 1);
+		// Escreve no arquivo
+		file << text;
+
+		// Fecha o arquivo
+		file.close();
+	}
 
 	// Retorna a lista de linhas em um arquivo.
-	static vector<string> readFile(string path);
+	static vector<string> readFile(string path) {
+		ifstream file(path);
+
+		string line;
+		vector<string> lineList;
+
+		// Adiciona as linhas na lista.
+		while (getline(file, line)) {
+			lineList.push_back(line+'\n');
+		}
+
+		return lineList;
+	}
+
+	// Aplica uma função em cada linha lida de um arquivo.
+	static vector<string> readFileWithFunction(string path, string (*function)(string)) {
+		ifstream file(path);
+
+		vector<string> lineList;
+		string line;
+
+		while (getline(file, line)) {
+			lineList.push_back(function(line));
+		}
+		
+		return lineList;
+	}
 
 	struct Type {
 		static const int STRING = 0;
@@ -36,34 +65,194 @@ public:
 		static const int DOUBLE = 2;
 	};
 
-	vector<vector<double>> parsecsv(vector<string> linelist);
+	template <typename t>
+	static vector<vector<t>> parsecsv(vector<string> linelist) {
+		int doublequotescount = 0;
+		int quotescount = 0;
+		int parenthesescount = 0;
 
-	double stringToDouble(string s);
+		// A posição inicia no (0, 0) [x, y]
+		Position currentposition;
 
-	vector<vector<double>> approximateGivenTheTime(vector<vector<double>>* reference_list, vector<vector<double>> signal_list);
+		// y<x<valor>>
+		vector<vector<t>> valuematrix;
 
-	vector<vector<double>> removeColumn(vector<vector<double>> matrix, int column_index);
+		for (currentposition.y; currentposition.y < linelist.size(); currentposition.y++) {
+			string line = linelist[currentposition.y];
+			vector<double> linetemp;
+			string valuetemp;
 
-  // Passar -1 para o column_index aplica a funÃ§Ã£o a todos os elementos da matriz.
-  vector<vector<double>> applyFunction(vector<vector<double>> matrix, int column_index, function<double(double)> fun);
+			for (unsigned int i = 0; i < line.length(); i++) {
+				char c = line[i];
+				
+				switch (c) {
+					case ',': {
+						if ((doublequotescount | quotescount | parenthesescount) > 0) {
+							valuetemp += c;
+						}
+						else {
+							// adiciona valor à lista temporária da linha.
+							linetemp.push_back(stringToDouble(valuetemp));
+							valuetemp = ""; // reinicia o valor.					
+						}
 
-  vector<vector<double>> applyFunction(vector<vector<double>> matrix, int column_index, function<double(double, double, double)> fun, double arg1, double arg2);
+						break;
+					}
+					case ';': {
+						linetemp.push_back(stringToDouble(valuetemp));
+						break;
+					}
 
-  vector<vector<double>> applyFunction(vector<vector<double>> matrix, int column_index, function<double(double, double, double, double)> fun, double arg1, double arg2, double arg3);
+					// avisa que um valor string está começando ou terminando.
+					case '"': {
+						if (doublequotescount > 0) {
+							doublequotescount--;
+						}
+						else {
+							doublequotescount++;
+						}
+						break;
+					}
+					
+					// Qualquer outro caractere que não se encaixe nas condições acima.
+					default: {
+						valuetemp += c;
+					}
+
+				}
+			}
+			valuematrix.push_back(linetemp);
+		}
 
 
-	class Serial {
-	private:
-		serialib serial;
-	public:
-		char erroropening = 0;
+		return valuematrix;
 
-		// inicia a porta serial.
-		Serial(const char* serial_port, long int baud_rate);
+	}
 
-		// retorna 1 no caso de sucesso, 0 caso falhe.
-		int  receiveData(string* line);
-	};
+	//template <typename T>
+	//static vector<T> parseCsvLine(string line) {
+	//	vector<T> linetemp;
+	//	string valuetemp;
+
+	//	for (unsigned int i = 0; i < line.length(); i++) {
+	//		char c = line[i];
+
+	//		switch (c) {
+	//		case ',': {
+	//			if ((doublequotescount | quotescount | parenthesescount) > 0) {
+	//				valuetemp += c;
+	//			}
+	//			else {
+	//				// adiciona valor à lista temporária da linha.
+	//				linetemp.push_back(stringToDouble(valuetemp));
+	//				valuetemp = ""; // reinicia o valor.					
+	//			}
+
+	//			break;
+	//		}
+	//		case ';': {
+	//			linetemp.push_back(stringToDouble(valuetemp));
+	//			break;
+	//		}
+
+	//				// avisa que um valor string está começando ou terminando.
+	//		case '"': {
+	//			if (doublequotescount > 0) {
+	//				doublequotescount--;
+	//			}
+	//			else {
+	//				doublequotescount++;
+	//			}
+	//			break;
+	//		}
+
+	//				// Qualquer outro caractere que não se encaixe nas condições acima.
+	//		default: {
+	//			valuetemp += c;
+	//		}
+
+	//		}
+	//	}
+	//	valuematrix.push_back(linetemp);
+	//}
+
+	static double stringToDouble(string s) {
+		istringstream iss(s);
+		double value;
+		// Tenta extrair um double do stream
+		if (iss >> value) {
+			return value;
+		}
+		else {
+			return 0;
+		}
+
+	}
+
+	static vector<vector<long>> parseCsv(vector<string> linelist) {
+		int doublequotescount = 0;
+		int quotescount = 0;
+		int parenthesescount = 0;
+
+		// A posição inicia no (0, 0) [x, y]
+		Position currentposition;
+
+		// y<x<valor>>
+		vector<vector<long>> valuematrix;
+
+		for (currentposition.y; currentposition.y < linelist.size(); currentposition.y++) {
+			string line = linelist[currentposition.y];
+			vector<long> linetemp;
+			string valuetemp;
+
+			for (int i = 0; i < line.length(); i++) {
+				char c = line[i];
+
+				switch (c) {
+				case ',': {
+					if ((doublequotescount | quotescount | parenthesescount) > 0) {
+						valuetemp += c;
+					}
+					else {
+						// adiciona valor à lista temporária da linha.
+						linetemp.push_back(stol(valuetemp));
+						valuetemp = ""; // reinicia o valor.					
+					}
+
+					break;
+				}
+				case '\n':
+				case '\r':
+				case ';': 
+					linetemp.push_back(stol(valuetemp));
+					break;
+
+						// avisa que um valor string está começando ou terminando.
+				case '"': {
+					if (doublequotescount > 0) {
+						doublequotescount--;
+					}
+					else {
+						doublequotescount++;
+					}
+					break;
+				}
+
+						// Qualquer outro caractere que não se encaixe nas condições acima.
+				default: {
+					valuetemp += c;
+				}
+
+				}
+			}
+			valuematrix.push_back(linetemp);
+		}
+
+
+		return valuematrix;
+
+	}
+
+	class SerialConfig;
 };
 
-#endif // !IO_H
